@@ -47,20 +47,25 @@
   .die.tumble { animation: tumble .5s cubic-bezier(.2,.8,.2,1); }
   @keyframes tumble { 20% { transform: rotate(-20deg) scale(1.15); } 50% { transform: rotate(20deg) scale(1.1); } 80% { transform: rotate(-6deg); } }
   #sum.pop { animation: pop .3s; }
-  @media (prefers-reduced-motion: reduce) { .card, .die, .count, .chip, #sum, #shelf { animation: none !important; } button { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .card, .die, .count, .chip, #sum, .shelf { animation: none !important; } button { transition: none; } }
   #roll { padding: 0 var(--s6); background: var(--accent); color: #4a3200; }
   #sum { font-size: var(--t-xl); font-weight: 700; color: var(--accent); min-width: 2.5ch; }
-  #open-shelf { position: absolute; top: max(var(--s3), env(safe-area-inset-top)); right: var(--s3); width: var(--tap); font-size: var(--t-lg); }
-  #shelf { position: fixed; inset: 0 0 0 auto; margin: 0; height: 100%; max-height: none; width: min(360px, 88vw); border: 0; border-left: 2px solid var(--accent); background: linear-gradient(170deg, var(--bg), #1c5f8e 45%, var(--bg2)); color: var(--fg); padding: 0; box-shadow: var(--shadow); display: flex; flex-direction: column; }
-  #shelf:not([open]) { display: none; }
-  #shelf[open] { animation: slide .3s cubic-bezier(.2,.8,.2,1); }
-  #shelf::backdrop { background: #0008; }
+  .corner { position: absolute; top: max(var(--s3), env(safe-area-inset-top)); width: var(--tap); font-size: var(--t-lg); }
+  .corner.left { left: var(--s3); } .corner.right { right: var(--s3); }
+  .shelf { position: fixed; inset: 0 0 0 auto; margin: 0; height: 100%; max-height: none; width: min(360px, 88vw); border: 0; border-left: 2px solid var(--accent); background: linear-gradient(170deg, var(--bg), #1c5f8e 45%, var(--bg2)); color: var(--fg); padding: 0; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+  .shelf.left { inset: 0 auto 0 0; border-left: 0; border-right: 2px solid var(--accent); }
+  .shelf:not([open]) { display: none; }
+  .shelf[open] { animation: slide .3s cubic-bezier(.2,.8,.2,1); }
+  .shelf.left[open] { animation-name: slide-l; }
+  .shelf::backdrop { background: #0008; }
+  @keyframes slide-l { from { transform: translateX(-100%); } }
+  .grid.two { grid-template-columns: 1fr 1fr; }
   .shelf-head, .shelf-foot { flex: none; display: flex; align-items: center; padding: var(--s3); gap: var(--s3); }
   .shelf-head { padding-top: max(var(--s3), env(safe-area-inset-top)); border-bottom: 1px solid #ffffff22; }
   .shelf-head h2 { flex: 1; margin: 0; text-align: left; }
   .shelf-foot { padding-bottom: max(var(--s3), env(safe-area-inset-bottom)); border-top: 1px solid #ffffff22; }
   .shelf-body { flex: 1; overflow-y: auto; padding: var(--s3); display: flex; flex-direction: column; gap: var(--s3); }
-  #close-shelf { width: var(--tap); flex: none; }
+  .shelf .close { width: var(--tap); flex: none; }
   #add-player { flex: 1; font-size: var(--t-md); }
   @keyframes slide { from { transform: translateX(100%); } }
   .player { background: #ffffff1a; border-radius: var(--radius); border-left: 8px solid var(--pc); padding: var(--s3); display: flex; flex-direction: column; gap: var(--s3); }
@@ -90,7 +95,8 @@
 <body>
 <main>
   <h1>Catan Hand</h1>
-  <button id="open-shelf" aria-label="Open players">👥</button>
+  <button id="open-dev" class="corner left" aria-label="Open development cards">🎴</button>
+  <button id="open-shelf" class="corner right" aria-label="Open players">👥</button>
   <section aria-labelledby="h-res">
     <h2 id="h-res">Resources</h2>
     <div id="resources" class="grid"></div>
@@ -100,14 +106,14 @@
     <h2 id="h-mkt">Market</h2>
     <div id="market" class="mkt"></div>
   </section>
-  <section aria-labelledby="h-dev">
-    <h2 id="h-dev">Development Cards</h2>
-    <div id="devcards" class="grid"></div>
-  </section>
   <button id="reset">Reset hand</button>
 </main>
-<dialog id="shelf" aria-labelledby="h-pl">
-  <div class="shelf-head"><h2 id="h-pl">Players</h2><button id="close-shelf" aria-label="Close players">✕</button></div>
+<dialog id="dev-shelf" class="shelf left" aria-labelledby="h-dev">
+  <div class="shelf-head"><h2 id="h-dev">Dev Cards</h2><button class="close" aria-label="Close development cards">✕</button></div>
+  <div class="shelf-body"><div id="devcards" class="grid two"></div></div>
+</dialog>
+<dialog id="shelf" class="shelf right" aria-labelledby="h-pl">
+  <div class="shelf-head"><h2 id="h-pl">Players</h2><button class="close" aria-label="Close players">✕</button></div>
   <div class="shelf-body" id="players"></div>
   <div class="shelf-foot"><button id="add-player">+ Add player</button></div>
 </dialog>
@@ -229,10 +235,12 @@
     localStorage.setItem(PKEY, JSON.stringify(players));
   }
 
-  const shelf = document.getElementById('shelf');
+  document.querySelectorAll('.shelf').forEach(d => {
+    d.querySelector('.close').onclick = () => d.close();
+    d.onclick = e => { if (e.target === d) d.close(); };
+  });
   document.getElementById('open-shelf').onclick = () => shelf.showModal();
-  document.getElementById('close-shelf').onclick = () => shelf.close();
-  shelf.onclick = e => { if (e.target === shelf) shelf.close(); };
+  document.getElementById('open-dev').onclick = () => document.getElementById('dev-shelf').showModal();
   document.getElementById('add-player').onclick = () => {
     const used = players.map(p => p.color), color = Object.keys(COLORS).find(c => !used.includes(c)) || 'Red';
     players.push({ name: '', color, pts: 0, dev: 0 });
