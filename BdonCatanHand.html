@@ -20,7 +20,7 @@
   h1 { font-size: var(--t-xl); margin: 0 0 var(--s4); text-align: center; }
   h2 { font-size: var(--t-sm); margin: var(--s6) 0 var(--s3); color: var(--accent); text-transform: uppercase; letter-spacing: .1em; text-align: center; }
   .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); }
-  .card { min-width: 0; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; gap: var(--s1); padding: var(--s3) var(--s2) var(--s2); }
+  .card { position: relative; min-width: 0; animation: rise .4s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 40ms); border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; gap: var(--s1); padding: var(--s3) var(--s2) var(--s2); }
   .card .icon { font-size: var(--t-2xl); line-height: 1.2; }
   .card .name { font-size: var(--t-sm); font-weight: 600; text-align: center; }
   .card .count { font-size: var(--t-2xl); font-weight: 700; line-height: 1.2; margin-top: auto; }
@@ -36,9 +36,17 @@
   .total.over { color: var(--warn); }
   #dice { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: var(--s3); padding: var(--s3) var(--s3) max(var(--s3), env(safe-area-inset-bottom)); background: #0b1520f2; border-top: 2px solid var(--accent); }
   .die { width: 56px; height: 56px; background: #fff; color: var(--ink); border-radius: var(--radius); font-size: var(--t-2xl); display: grid; place-items: center; font-weight: 700; }
-  .die.spin { animation: wobble .4s; }
-  @keyframes wobble { 30% { transform: rotate(-15deg) scale(1.1); } 60% { transform: rotate(15deg); } }
-  @media (prefers-reduced-motion: reduce) { .die.spin { animation: none; } button { transition: none; } }
+  .card .count.pop { animation: pop .3s cubic-bezier(.2,.8,.2,1); }
+  .chip { position: absolute; top: 40%; left: 50%; transform: translateX(-50%); font-weight: 700; font-size: var(--t-lg); pointer-events: none; animation: float .7s ease-out forwards; }
+  .card:has(.pop) { animation: nudge .3s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px) scale(.96); } }
+  @keyframes pop { 40% { transform: scale(1.35); } }
+  @keyframes nudge { 30% { transform: scale(1.03); } }
+  @keyframes float { to { transform: translate(-50%, -48px); opacity: 0; } }
+  .die.tumble { animation: tumble .5s cubic-bezier(.2,.8,.2,1); }
+  @keyframes tumble { 20% { transform: rotate(-20deg) scale(1.15); } 50% { transform: rotate(20deg) scale(1.1); } 80% { transform: rotate(-6deg); } }
+  #sum.pop { animation: pop .3s; }
+  @media (prefers-reduced-motion: reduce) { .card, .die, .count, .chip, #sum { animation: none !important; } button { transition: none; } }
   #roll { padding: 0 var(--s6); background: var(--accent); color: #4a3200; }
   #sum { font-size: var(--t-xl); font-weight: 700; color: var(--accent); min-width: 2.5ch; }
   #reset { width: 100%; margin-top: var(--s6); color: var(--warn); border: 2px solid #ffb4a866; background: transparent; font-size: var(--t-md); }
@@ -83,11 +91,12 @@
   }
   RESOURCES.forEach(n => document.getElementById('resources').append(card(n, n.toLowerCase())));
   DEV.forEach(n => document.getElementById('devcards').append(card(n, 'dev')));
+  document.querySelectorAll('.card').forEach((c, i) => c.style.setProperty('--i', i));
 
   function render() {
     document.querySelectorAll('.card').forEach(c => {
-      const n = c.querySelector('.name').textContent, v = hand[n] || 0;
-      c.querySelector('.count').textContent = v;
+      const n = c.querySelector('.name').textContent, v = hand[n] || 0, el = c.querySelector('.count');
+      if (el.textContent != v) { el.textContent = v; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
       c.querySelector('[data-d="-1"]').setAttribute('aria-disabled', v === 0);
     });
     const total = RESOURCES.reduce((s, n) => s + (hand[n] || 0), 0);
@@ -99,14 +108,29 @@
   document.body.addEventListener('click', e => {
     const b = e.target.closest('button[data-n]');
     if (!b) return;
-    hand[b.dataset.n] = Math.max(0, (hand[b.dataset.n] || 0) + Number(b.dataset.d));
+    const cur = hand[b.dataset.n] || 0, d = Number(b.dataset.d);
+    if (cur + d < 0) return;
+    hand[b.dataset.n] = cur + d;
+    const chip = document.createElement('span');
+    chip.className = 'chip'; chip.textContent = d > 0 ? '+1' : '−1';
+    chip.onanimationend = () => chip.remove();
+    b.closest('.card').append(chip);
     render();
   });
 
   document.getElementById('roll').onclick = () => {
-    const a = 1 + Math.floor(Math.random() * 6), b = 1 + Math.floor(Math.random() * 6);
-    d1.textContent = a; d2.textContent = b; sum.textContent = '= ' + (a + b);
-    [d1, d2].forEach(d => { d.classList.remove('spin'); void d.offsetWidth; d.classList.add('spin'); });
+    const r = () => 1 + Math.floor(Math.random() * 6), a = r(), b = r();
+    roll.disabled = true; sum.textContent = '';
+    [d1, d2].forEach(d => { d.classList.remove('tumble'); void d.offsetWidth; d.classList.add('tumble'); });
+    let n = 0;
+    const t = setInterval(() => {
+      d1.textContent = r(); d2.textContent = r();
+      if (++n < 8) return;
+      clearInterval(t);
+      d1.textContent = a; d2.textContent = b; sum.textContent = '= ' + (a + b);
+      sum.classList.remove('pop'); void sum.offsetWidth; sum.classList.add('pop');
+      roll.disabled = false;
+    }, 60);
   };
 
   document.getElementById('reset').onclick = () => {
