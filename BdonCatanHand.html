@@ -51,23 +51,30 @@
   #roll { padding: 0 var(--s6); background: var(--accent); color: #4a3200; }
   #sum { font-size: var(--t-xl); font-weight: 700; color: var(--accent); min-width: 2.5ch; }
   #open-shelf { position: absolute; top: max(var(--s3), env(safe-area-inset-top)); right: var(--s3); width: var(--tap); font-size: var(--t-lg); }
-  #shelf { position: fixed; inset: 0 0 0 auto; margin: 0; height: 100%; max-height: none; width: min(360px, 88vw); border: 0; border-left: 2px solid var(--accent); background: linear-gradient(170deg, var(--bg), #1c5f8e 45%, var(--bg2)); color: var(--fg); padding: max(var(--s3), env(safe-area-inset-top)) var(--s3) max(var(--s3), env(safe-area-inset-bottom)); overflow-y: auto; box-shadow: var(--shadow); }
+  #shelf { position: fixed; inset: 0 0 0 auto; margin: 0; height: 100%; max-height: none; width: min(360px, 88vw); border: 0; border-left: 2px solid var(--accent); background: linear-gradient(170deg, var(--bg), #1c5f8e 45%, var(--bg2)); color: var(--fg); padding: 0; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+  #shelf:not([open]) { display: none; }
   #shelf[open] { animation: slide .3s cubic-bezier(.2,.8,.2,1); }
   #shelf::backdrop { background: #0008; }
-  #shelf h2 { margin-top: var(--s2); }
-  #close-shelf { position: absolute; top: max(var(--s3), env(safe-area-inset-top)); right: var(--s3); width: var(--tap); }
+  .shelf-head, .shelf-foot { flex: none; display: flex; align-items: center; padding: var(--s3); gap: var(--s3); }
+  .shelf-head { padding-top: max(var(--s3), env(safe-area-inset-top)); border-bottom: 1px solid #ffffff22; }
+  .shelf-head h2 { flex: 1; margin: 0; text-align: left; }
+  .shelf-foot { padding-bottom: max(var(--s3), env(safe-area-inset-bottom)); border-top: 1px solid #ffffff22; }
+  .shelf-body { flex: 1; overflow-y: auto; padding: var(--s3); display: flex; flex-direction: column; gap: var(--s3); }
+  #close-shelf { width: var(--tap); flex: none; }
+  #add-player { flex: 1; font-size: var(--t-md); }
   @keyframes slide { from { transform: translateX(100%); } }
-  .player { display: grid; grid-template-columns: auto 1fr auto; gap: var(--s2); align-items: center; background: #ffffff1a; border-radius: var(--radius); padding: var(--s2); margin-bottom: var(--s2); border-left: 8px solid var(--pc); }
-  .player input, .player select { font: inherit; font-weight: 600; min-height: var(--tap); border: 0; border-radius: var(--radius); padding: 0 var(--s3); background: #ffffff22; color: inherit; min-width: 0; }
-  .player select { grid-column: 1; }
-  .player input { grid-column: 2; }
-  .player .stats { grid-column: 1 / -1; display: flex; gap: var(--s2); }
-  .player .stat { flex: 1; display: flex; align-items: center; gap: var(--s1); }
-  .player .stat span:first-child { font-size: var(--t-sm); flex: 1; }
-  .player .stat b { font-size: var(--t-lg); min-width: 2ch; text-align: center; }
-  .player .stat button { width: var(--tap); background: #fff; color: var(--ink); }
-  .player .rm { grid-column: 3; background: transparent; color: var(--warn); font-size: var(--t-md); }
-  #add-player { width: 100%; font-size: var(--t-md); }
+  .player { background: #ffffff1a; border-radius: var(--radius); border-left: 8px solid var(--pc); padding: var(--s3); display: flex; flex-direction: column; gap: var(--s3); }
+  .player .head { display: flex; gap: var(--s2); align-items: center; }
+  .player input, .player select { font: inherit; font-weight: 600; height: var(--tap); border: 0; border-radius: var(--radius); padding: 0 var(--s3); background: #ffffff22; color: inherit; min-width: 0; }
+  .player select { flex: 0 0 auto; -webkit-appearance: none; appearance: none; }
+  .player input { flex: 1; }
+  .player .rm { width: var(--tap); flex: none; background: transparent; color: var(--warn); font-size: var(--t-md); }
+  .player .stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+  .player .stat { background: #00000022; border-radius: var(--radius); padding: var(--s2); display: flex; flex-direction: column; align-items: center; gap: var(--s1); }
+  .player .stat .lbl { font-size: var(--t-sm); font-weight: 600; opacity: .85; }
+  .player .stat .ctl { display: flex; align-items: center; gap: var(--s1); width: 100%; }
+  .player .stat .ctl button { flex: 1; min-width: 0; background: #fff; color: var(--ink); }
+  .player .stat b { font-size: var(--t-xl); min-width: 2ch; text-align: center; }
   #reset { width: 100%; margin-top: var(--s6); color: var(--warn); border: 2px solid #ffb4a866; background: transparent; font-size: var(--t-md); }
 </style>
 </head>
@@ -87,10 +94,9 @@
   <button id="reset">Reset hand</button>
 </main>
 <dialog id="shelf" aria-labelledby="h-pl">
-  <button id="close-shelf" aria-label="Close players">✕</button>
-  <h2 id="h-pl">Players</h2>
-  <div id="players"></div>
-  <button id="add-player">+ Add player</button>
+  <div class="shelf-head"><h2 id="h-pl">Players</h2><button id="close-shelf" aria-label="Close players">✕</button></div>
+  <div class="shelf-body" id="players"></div>
+  <div class="shelf-foot"><button id="add-player">+ Add player</button></div>
 </dialog>
 <footer id="dice">
   <div class="die" id="d1" aria-label="die one">–</div>
@@ -170,13 +176,13 @@
     players.forEach((p, i) => {
       const el = document.createElement('div');
       el.className = 'player'; el.style.setProperty('--pc', COLORS[p.color] || '#888');
-      el.innerHTML = `<select data-i="${i}" data-f="color" aria-label="Player color">${Object.keys(COLORS).map(c => `<option${c === p.color ? ' selected' : ''}>${c}</option>`).join('')}</select>
-        <input data-i="${i}" data-f="name" value="${p.name.replace(/"/g, '&quot;')}" placeholder="Name" aria-label="Player name">
-        <button class="rm" data-i="${i}" data-f="rm" aria-label="Remove player">✕</button>
-        <span class="stats">
-          <span class="stat"><span>🏆 Points</span><button data-i="${i}" data-f="pts" data-d="-1" aria-label="Remove point">−</button><b>${p.pts}</b><button data-i="${i}" data-f="pts" data-d="1" aria-label="Add point">+</button></span>
-          <span class="stat"><span>🎴 Dev</span><button data-i="${i}" data-f="dev" data-d="-1" aria-label="Remove dev card">−</button><b>${p.dev}</b><button data-i="${i}" data-f="dev" data-d="1" aria-label="Add dev card">+</button></span>
-        </span>`;
+      const stat = (f, icon, label, val) => `<div class="stat"><span class="lbl">${icon} ${label}</span><span class="ctl"><button data-i="${i}" data-f="${f}" data-d="-1" aria-label="Remove ${label}">−</button><b>${val}</b><button data-i="${i}" data-f="${f}" data-d="1" aria-label="Add ${label}">+</button></span></div>`;
+      el.innerHTML = `<div class="head">
+          <select data-i="${i}" data-f="color" aria-label="Player color">${Object.keys(COLORS).map(c => `<option${c === p.color ? ' selected' : ''}>${c}</option>`).join('')}</select>
+          <input data-i="${i}" data-f="name" value="${p.name.replace(/"/g, '&quot;')}" placeholder="Name" aria-label="Player name">
+          <button class="rm" data-i="${i}" data-f="rm" aria-label="Remove player">✕</button>
+        </div>
+        <div class="stats">${stat('pts', '🏆', 'Points', p.pts)}${stat('dev', '🎴', 'Dev cards', p.dev)}</div>`;
       wrap.append(el);
     });
     localStorage.setItem(PKEY, JSON.stringify(players));
