@@ -49,6 +49,17 @@
   @media (prefers-reduced-motion: reduce) { .card, .die, .count, .chip, #sum { animation: none !important; } button { transition: none; } }
   #roll { padding: 0 var(--s6); background: var(--accent); color: #4a3200; }
   #sum { font-size: var(--t-xl); font-weight: 700; color: var(--accent); min-width: 2.5ch; }
+  .player { display: grid; grid-template-columns: auto 1fr auto; gap: var(--s2); align-items: center; background: #ffffff1a; border-radius: var(--radius); padding: var(--s2); margin-bottom: var(--s2); border-left: 8px solid var(--pc); }
+  .player input, .player select { font: inherit; font-weight: 600; min-height: var(--tap); border: 0; border-radius: var(--radius); padding: 0 var(--s3); background: #ffffff22; color: inherit; min-width: 0; }
+  .player select { grid-column: 1; }
+  .player input { grid-column: 2; }
+  .player .stats { grid-column: 1 / -1; display: flex; gap: var(--s2); }
+  .player .stat { flex: 1; display: flex; align-items: center; gap: var(--s1); }
+  .player .stat span:first-child { font-size: var(--t-sm); flex: 1; }
+  .player .stat b { font-size: var(--t-lg); min-width: 2ch; text-align: center; }
+  .player .stat button { width: var(--tap); background: #fff; color: var(--ink); }
+  .player .rm { grid-column: 3; background: transparent; color: var(--warn); font-size: var(--t-md); }
+  #add-player { width: 100%; font-size: var(--t-md); }
   #reset { width: 100%; margin-top: var(--s6); color: var(--warn); border: 2px solid #ffb4a866; background: transparent; font-size: var(--t-md); }
 </style>
 </head>
@@ -63,6 +74,11 @@
   <section aria-labelledby="h-dev">
     <h2 id="h-dev">Development Cards</h2>
     <div id="devcards" class="grid"></div>
+  </section>
+  <section aria-labelledby="h-pl">
+    <h2 id="h-pl">Players</h2>
+    <div id="players"></div>
+    <button id="add-player">+ Add player</button>
   </section>
   <button id="reset">Reset hand</button>
 </main>
@@ -133,13 +149,58 @@
     }, 60);
   };
 
+  const COLORS = { Red: '#d0342c', Blue: '#2b5fd9', White: '#f4f4f4', Orange: '#f28c28', Green: '#3f9a4b', Brown: '#7a4b2a' };
+  const PKEY = 'catanPlayers';
+  let players = [];
+  try { players = JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) { players = []; }
+
+  function renderPlayers() {
+    const wrap = document.getElementById('players');
+    wrap.innerHTML = '';
+    players.forEach((p, i) => {
+      const el = document.createElement('div');
+      el.className = 'player'; el.style.setProperty('--pc', COLORS[p.color] || '#888');
+      el.innerHTML = `<select data-i="${i}" data-f="color" aria-label="Player color">${Object.keys(COLORS).map(c => `<option${c === p.color ? ' selected' : ''}>${c}</option>`).join('')}</select>
+        <input data-i="${i}" data-f="name" value="${p.name.replace(/"/g, '&quot;')}" placeholder="Name" aria-label="Player name">
+        <button class="rm" data-i="${i}" data-f="rm" aria-label="Remove player">✕</button>
+        <span class="stats">
+          <span class="stat"><span>🏆 Points</span><button data-i="${i}" data-f="pts" data-d="-1" aria-label="Remove point">−</button><b>${p.pts}</b><button data-i="${i}" data-f="pts" data-d="1" aria-label="Add point">+</button></span>
+          <span class="stat"><span>🎴 Dev</span><button data-i="${i}" data-f="dev" data-d="-1" aria-label="Remove dev card">−</button><b>${p.dev}</b><button data-i="${i}" data-f="dev" data-d="1" aria-label="Add dev card">+</button></span>
+        </span>`;
+      wrap.append(el);
+    });
+    localStorage.setItem(PKEY, JSON.stringify(players));
+  }
+
+  document.getElementById('add-player').onclick = () => {
+    const used = players.map(p => p.color), color = Object.keys(COLORS).find(c => !used.includes(c)) || 'Red';
+    players.push({ name: '', color, pts: 0, dev: 0 });
+    renderPlayers();
+    document.querySelector('#players .player:last-child input').focus();
+  };
+  document.getElementById('players').addEventListener('click', e => {
+    const b = e.target.closest('button[data-f]');
+    if (!b) return;
+    const p = players[b.dataset.i];
+    if (b.dataset.f === 'rm') { if (confirm(`Remove ${p.name || 'this player'}?`)) players.splice(b.dataset.i, 1); }
+    else p[b.dataset.f] = Math.max(0, p[b.dataset.f] + Number(b.dataset.d));
+    renderPlayers();
+  });
+  document.getElementById('players').addEventListener('change', e => {
+    const f = e.target.dataset.f;
+    if (!f) return;
+    players[e.target.dataset.i][f] = e.target.value;
+    if (f === 'color') renderPlayers(); else localStorage.setItem(PKEY, JSON.stringify(players));
+  });
+
   document.getElementById('reset').onclick = () => {
-    if (!confirm('Reset your whole hand to zero?')) return;
+    if (!confirm('Reset your hand and all player points to zero?')) return;
     hand = {};
-    render();
+    players.forEach(p => { p.pts = 0; p.dev = 0; });
+    render(); renderPlayers();
   };
 
-  render();
+  render(); renderPlayers();
 </script>
 </body>
 </html>
