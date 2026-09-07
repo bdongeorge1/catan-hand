@@ -32,7 +32,7 @@
   button[aria-disabled="true"] { opacity: .35; cursor: default; }
   .card button { flex: 1; background: #fff; color: var(--ink); }
   .brick { background: #b5431f; } .lumber { background: #23704a; } .sheep { background: #9bd66a; color: #1c3312; }
-  .hay { background: #ffc83d; color: #4a3200; } .ore { background: #5b6779; } .dev { background: #5a3fbf; }
+  .hay { background: #ffc83d; color: #4a3200; } .rock { background: #5b6779; } .dev { background: #5a3fbf; }
   .total { text-align: center; color: var(--accent); margin-top: var(--s3); font-size: var(--t-md); }
   .total.over { color: var(--warn); }
   #dice { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: var(--s3); padding: var(--s3) var(--s3) max(var(--s3), env(safe-area-inset-bottom)); background: #0b1520f2; border-top: 2px solid var(--accent); }
@@ -125,9 +125,9 @@
   <button id="roll">Roll</button>
 </footer>
 <script>
-  const RESOURCES = ['Brick', 'Lumber', 'Sheep', 'Hay', 'Ore'];
+  const RESOURCES = ['Brick', 'Lumber', 'Sheep', 'Hay', 'Rock'];
   const DEV = ['Knight', 'Victory Point', 'Road Building', 'Year of Plenty', 'Monopoly'];
-  const ICON = { Brick: '🧱', Lumber: '🌲', Sheep: '🐑', Hay: '🌾', Ore: '⛰️', Knight: '⚔️', 'Victory Point': '🏆', 'Road Building': '🛣️', 'Year of Plenty': '🎁', Monopoly: '🎩' };
+  const ICON = { Brick: '🧱', Lumber: '🌲', Sheep: '🐑', Hay: '🌾', Rock: '⛰️', Knight: '⚔️', 'Victory Point': '🏆', 'Road Building': '🛣️', 'Year of Plenty': '🎁', Monopoly: '🎩' };
   const KEY = 'catanHand';
   let hand = {};
   try { hand = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { hand = {}; }
@@ -172,7 +172,7 @@
     render();
   });
 
-  const MARKET = { Road: { Brick: 1, Lumber: 1 }, Settlement: { Brick: 1, Lumber: 1, Sheep: 1, Hay: 1 }, City: { Hay: 2, Ore: 3 }, 'Dev Card': { Sheep: 1, Hay: 1, Ore: 1 } };
+  const MARKET = { Road: { Brick: 1, Lumber: 1 }, Settlement: { Brick: 1, Lumber: 1, Sheep: 1, Hay: 1 }, City: { Hay: 2, Rock: 3 }, 'Dev Card': { Sheep: 1, Hay: 1, Rock: 1 } };
   const MICON = { Road: '🛣️', Settlement: '🏠', City: '🏰', 'Dev Card': '🎴' };
   Object.entries(MARKET).forEach(([n, cost]) => {
     const el = document.createElement('div');
