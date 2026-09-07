@@ -1,111 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1e2a38">
-    <title>Catan Hand</title>
-    <style>
-  @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap');
-  body { font-family: 'Fredoka', system-ui, sans-serif; background: linear-gradient(170deg, #163a5c 0%, #1c5f8e 45%, #2f6b3a 100%) fixed; min-height: 100vh; color: #fff; margin: 0; padding: max(12px, env(safe-area-inset-top)) 12px 150px; max-width: 520px; margin-inline: auto; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-  h1 { font-size: 1.9rem; margin: 4px 0 14px; text-align: center; text-shadow: 0 3px 0 #0006; letter-spacing: .02em; }
-  h2 { font-size: .9rem; margin: 22px 0 10px; color: #ffd76a; text-transform: uppercase; letter-spacing: .12em; text-align: center; }
-  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .card { min-width: 0; min-height: 170px; border-radius: 16px; border: 4px solid #fff; box-shadow: 0 8px 0 #0004, 0 12px 24px #0006; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 10px 6px 8px; box-sizing: border-box; background-image: linear-gradient(160deg, #ffffff33, transparent 60%); transition: transform .1s; }
-  .card:active { transform: scale(.96); }
-  .card .icon { font-size: 2.4rem; filter: drop-shadow(0 3px 2px #0005); }
-  .card .name { font-size: .72rem; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: .06em; opacity: .9; }
-  .card .count { font-size: 2.4rem; font-weight: 700; line-height: 1; text-shadow: 0 3px 0 #0005; }
-  .card .ctl { display: flex; gap: 6px; width: 100%; }
-  button { font-family: inherit; font-size: 1.2rem; font-weight: 700; border: 0; border-radius: 12px; cursor: pointer; background: #ffffff33; color: inherit; }
-  .card button { flex: 1; height: 42px; font-size: 1.4rem; background: #ffffffcc; color: #222; box-shadow: 0 3px 0 #0004; }
-  .card button:active { transform: translateY(3px); box-shadow: none; }
-  .brick { background-color: #d9552d; } .lumber { background-color: #2e8b57; } .wool { background-color: #9bd66a; color: #1c3312; }
-  .grain { background-color: #ffc83d; color: #4a3200; } .ore { background-color: #7c8aa0; } .dev { background-color: #6d4bd6; }
-  .total { text-align: center; color: #ffd76a; margin-top: 12px; font-size: 1.05rem; }
-  #dice { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 12px max(12px, env(safe-area-inset-bottom)); background: #0b1520ee; border-top: 3px solid #ffd76a; backdrop-filter: blur(6px); }
-  .die { width: 56px; height: 56px; background: #fff; color: #222; border-radius: 14px; font-size: 2.2rem; display: grid; place-items: center; font-weight: 700; box-shadow: inset 0 -5px 0 #0002, 0 4px 8px #0008; }
-  .die.spin { animation: wobble .5s; }
-  @keyframes wobble { 25% { transform: rotate(-18deg) scale(1.15); } 50% { transform: rotate(18deg) scale(1.1); } 75% { transform: rotate(-8deg); } }
-  #roll { height: 56px; padding: 0 22px; font-size: 1.4rem; background: linear-gradient(#ffe38a, #f2b632); color: #4a3200; box-shadow: 0 5px 0 #a8720e; }
-  #roll:active { transform: translateY(4px); box-shadow: none; }
-  #sum { font-size: 1.8rem; font-weight: 700; color: #ffd76a; min-width: 2.5ch; }
-  #reset { width: 100%; height: 48px; margin-top: 28px; background: #ffffff1a; color: #ff9b9b; border: 2px dashed #ff9b9b66; }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#163a5c">
+<title>Catan Hand</title>
+<style>
+  :root {
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s6: 24px;
+    --t-sm: .8rem; --t-md: 1rem; --t-lg: 1.25rem; --t-xl: 1.5rem; --t-2xl: 2rem;
+    --radius: 12px; --tap: 44px;
+    --bg: #163a5c; --bg2: #2f6b3a; --fg: #fff; --accent: #ffd76a; --warn: #ffb4a8; --ink: #1a1a1a;
+    --shadow: 0 4px 12px #0005;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: linear-gradient(170deg, var(--bg), #1c5f8e 45%, var(--bg2)) fixed; min-height: 100vh; color: var(--fg); margin: 0; padding: max(var(--s3), env(safe-area-inset-top)) var(--s3) 120px; max-width: 520px; margin-inline: auto; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  h1 { font-size: var(--t-xl); margin: 0 0 var(--s4); text-align: center; }
+  h2 { font-size: var(--t-sm); margin: var(--s6) 0 var(--s3); color: var(--accent); text-transform: uppercase; letter-spacing: .1em; text-align: center; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); }
+  .card { min-width: 0; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; gap: var(--s1); padding: var(--s3) var(--s2) var(--s2); }
+  .card .icon { font-size: var(--t-2xl); line-height: 1.2; }
+  .card .name { font-size: var(--t-sm); font-weight: 600; text-align: center; }
+  .card .count { font-size: var(--t-2xl); font-weight: 700; line-height: 1.2; margin-top: auto; }
+  .card .ctl { display: flex; gap: var(--s2); width: 100%; margin-top: var(--s1); }
+  button { font-family: inherit; font-size: var(--t-lg); font-weight: 700; border: 0; border-radius: var(--radius); cursor: pointer; background: #ffffff33; color: inherit; min-height: var(--tap); transition: transform .08s, opacity .15s; }
+  button:active { transform: scale(.94); }
+  button:focus-visible, .card:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+  button[aria-disabled="true"] { opacity: .35; cursor: default; }
+  .card button { flex: 1; background: #fff; color: var(--ink); }
+  .brick { background: #b5431f; } .lumber { background: #23704a; } .wool { background: #9bd66a; color: #1c3312; }
+  .grain { background: #ffc83d; color: #4a3200; } .ore { background: #5b6779; } .dev { background: #5a3fbf; }
+  .total { text-align: center; color: var(--accent); margin-top: var(--s3); font-size: var(--t-md); }
+  .total.over { color: var(--warn); }
+  #dice { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: var(--s3); padding: var(--s3) var(--s3) max(var(--s3), env(safe-area-inset-bottom)); background: #0b1520f2; border-top: 2px solid var(--accent); }
+  .die { width: 56px; height: 56px; background: #fff; color: var(--ink); border-radius: var(--radius); font-size: var(--t-2xl); display: grid; place-items: center; font-weight: 700; }
+  .die.spin { animation: wobble .4s; }
+  @keyframes wobble { 30% { transform: rotate(-15deg) scale(1.1); } 60% { transform: rotate(15deg); } }
+  @media (prefers-reduced-motion: reduce) { .die.spin { animation: none; } button { transition: none; } }
+  #roll { padding: 0 var(--s6); background: var(--accent); color: #4a3200; }
+  #sum { font-size: var(--t-xl); font-weight: 700; color: var(--accent); min-width: 2.5ch; }
+  #reset { width: 100%; margin-top: var(--s6); color: var(--warn); border: 2px solid #ffb4a866; background: transparent; font-size: var(--t-md); }
 </style>
 </head>
-
 <body>
-    <h1>Catan Hand</h1>
-
-    <h2>Resources</h2>
+<main>
+  <h1>Catan Hand</h1>
+  <section aria-labelledby="h-res">
+    <h2 id="h-res">Resources</h2>
     <div id="resources" class="grid"></div>
-    <div class="total">Total resource cards: <b id="total">0</b></div>
-
-    <h2>Development Cards</h2>
+    <p class="total" id="total-wrap" aria-live="polite">Total resource cards: <b id="total">0</b></p>
+  </section>
+  <section aria-labelledby="h-dev">
+    <h2 id="h-dev">Development Cards</h2>
     <div id="devcards" class="grid"></div>
+  </section>
+  <button id="reset">Reset hand</button>
+</main>
+<footer id="dice">
+  <div class="die" id="d1" aria-label="die one">–</div>
+  <div class="die" id="d2" aria-label="die two">–</div>
+  <span id="sum" aria-live="polite"></span>
+  <button id="roll">Roll</button>
+</footer>
+<script>
+  const RESOURCES = ['Brick', 'Lumber', 'Wool', 'Grain', 'Ore'];
+  const DEV = ['Knight', 'Victory Point', 'Road Building', 'Year of Plenty', 'Monopoly'];
+  const ICON = { Brick: '🧱', Lumber: '🌲', Wool: '🐑', Grain: '🌾', Ore: '⛰️', Knight: '⚔️', 'Victory Point': '🏆', 'Road Building': '🛣️', 'Year of Plenty': '🎁', Monopoly: '🎩' };
+  const KEY = 'catanHand';
+  let hand = {};
+  try { hand = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { hand = {}; }
 
-    <div id="dice">
-        <div class="die" id="d1">–</div>
-        <div class="die" id="d2">–</div>
-        <span id="sum"></span>
-        <button id="roll">Roll</button>
-    </div>
-
-    <button id="reset">Reset hand</button>
-
-    <script>
-        const RESOURCES = ['Brick', 'Lumber', 'Wool', 'Grain', 'Ore'];
-        const ICON = {Brick: '🧱', Lumber: '🌲', Wool: '🐑', Grain: '🌾', Ore: '⛰️', Knight: '⚔️', 'Victory Point': '🏆', 'Road Building': '🛣️', 'Year of Plenty': '🎁', Monopoly: '🎩'};
-        const DEV = ['Knight', 'Victory Point', 'Road Building', 'Year of Plenty', 'Monopoly'];
-        const KEY = 'catanHand';
-
-        let hand = JSON.parse(localStorage.getItem(KEY) || '{}');
-
-        function row(name, cls) {
-            const el = document.createElement('div');
-            el.className = 'card ' + cls;
-            el.innerHTML = `<span class="icon">${ICON[name]}</span>
+  function card(name, cls) {
+    const el = document.createElement('div');
+    el.className = 'card ' + cls;
+    el.innerHTML = `<span class="icon" aria-hidden="true">${ICON[name]}</span>
       <span class="name">${name}</span>
-      <span class="count">0</span>
-      <span class="ctl"><button data-n="${name}" data-d="-1">−</button><button data-n="${name}" data-d="1">+</button></span>`;
-            return el;
-        }
-        RESOURCES.forEach(n => document.getElementById('resources').append(row(n, n.toLowerCase())));
-        DEV.forEach(n => document.getElementById('devcards').append(row(n, 'dev')));
+      <span class="count" aria-live="polite" aria-label="${name} count">0</span>
+      <span class="ctl"><button data-n="${name}" data-d="-1" aria-label="Remove ${name}">−</button><button data-n="${name}" data-d="1" aria-label="Add ${name}">+</button></span>`;
+    return el;
+  }
+  RESOURCES.forEach(n => document.getElementById('resources').append(card(n, n.toLowerCase())));
+  DEV.forEach(n => document.getElementById('devcards').append(card(n, 'dev')));
 
-        function render() {
-            document.querySelectorAll('.card').forEach(r => {
-                r.querySelector('.count').textContent = hand[r.querySelector('.name').textContent] || 0;
-            });
-            document.getElementById('total').textContent = RESOURCES.reduce((s, n) => s + (hand[n] || 0), 0);
-            localStorage.setItem(KEY, JSON.stringify(hand));
-        }
+  function render() {
+    document.querySelectorAll('.card').forEach(c => {
+      const n = c.querySelector('.name').textContent, v = hand[n] || 0;
+      c.querySelector('.count').textContent = v;
+      c.querySelector('[data-d="-1"]').setAttribute('aria-disabled', v === 0);
+    });
+    const total = RESOURCES.reduce((s, n) => s + (hand[n] || 0), 0);
+    document.getElementById('total').textContent = total;
+    document.getElementById('total-wrap').classList.toggle('over', total > 7); // robber discard threshold
+    localStorage.setItem(KEY, JSON.stringify(hand));
+  }
 
-        document.body.addEventListener('click', e => {
-            const b = e.target.closest('button[data-n]');
-            if (!b) return;
-            const n = b.dataset.n;
-            hand[n] = Math.max(0, (hand[n] || 0) + Number(b.dataset.d));
-            render();
-        });
+  document.body.addEventListener('click', e => {
+    const b = e.target.closest('button[data-n]');
+    if (!b) return;
+    hand[b.dataset.n] = Math.max(0, (hand[b.dataset.n] || 0) + Number(b.dataset.d));
+    render();
+  });
 
-        document.getElementById('roll').onclick = () => {
-            const a = 1 + Math.floor(Math.random() * 6), b = 1 + Math.floor(Math.random() * 6);
-            d1.textContent = a; d2.textContent = b; sum.textContent = '= ' + (a + b);
+  document.getElementById('roll').onclick = () => {
+    const a = 1 + Math.floor(Math.random() * 6), b = 1 + Math.floor(Math.random() * 6);
+    d1.textContent = a; d2.textContent = b; sum.textContent = '= ' + (a + b);
     [d1, d2].forEach(d => { d.classList.remove('spin'); void d.offsetWidth; d.classList.add('spin'); });
-        };
+  };
 
-        document.getElementById('reset').onclick = () => {
-            if (!confirm('Reset your whole hand to zero?')) return;
-            hand = {};
-            render();
-        };
+  document.getElementById('reset').onclick = () => {
+    if (!confirm('Reset your whole hand to zero?')) return;
+    hand = {};
+    render();
+  };
 
-        render();
-    </script>
+  render();
+</script>
 </body>
-
 </html>
