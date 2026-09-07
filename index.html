@@ -31,8 +31,8 @@
   button:focus-visible, .card:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
   button[aria-disabled="true"] { opacity: .35; cursor: default; }
   .card button { flex: 1; background: #fff; color: var(--ink); }
-  .brick { background: #b5431f; } .lumber { background: #23704a; } .wool { background: #9bd66a; color: #1c3312; }
-  .grain { background: #ffc83d; color: #4a3200; } .ore { background: #5b6779; } .dev { background: #5a3fbf; }
+  .brick { background: #b5431f; } .lumber { background: #23704a; } .sheep { background: #9bd66a; color: #1c3312; }
+  .hay { background: #ffc83d; color: #4a3200; } .ore { background: #5b6779; } .dev { background: #5a3fbf; }
   .total { text-align: center; color: var(--accent); margin-top: var(--s3); font-size: var(--t-md); }
   .total.over { color: var(--warn); }
   #dice { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: var(--s3); padding: var(--s3) var(--s3) max(var(--s3), env(safe-area-inset-bottom)); background: #0b1520f2; border-top: 2px solid var(--accent); }
@@ -75,6 +75,15 @@
   .player .stat .ctl { display: flex; align-items: center; gap: var(--s1); width: 100%; }
   .player .stat .ctl button { flex: 1; min-width: 0; background: #fff; color: var(--ink); }
   .player .stat b { font-size: var(--t-xl); min-width: 2ch; text-align: center; }
+  .mkt { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+  .item { background: #ffffff1a; border-radius: var(--radius); padding: var(--s3); display: flex; flex-direction: column; gap: var(--s2); box-shadow: var(--shadow); }
+  .item .name { font-weight: 700; }
+  .item .cost { font-size: var(--t-md); letter-spacing: .05em; }
+  .item button { background: var(--accent); color: #4a3200; font-size: var(--t-md); margin-top: auto; }
+  .item button[aria-disabled="true"] { background: #ffffff33; color: var(--fg); }
+  #toast { position: fixed; left: var(--s3); right: var(--s3); bottom: 96px; margin-inline: auto; max-width: 480px; background: #fff; color: var(--ink); border-radius: var(--radius); padding: var(--s3); font-weight: 600; text-align: center; box-shadow: var(--shadow); opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+  #toast.err { background: var(--warn); }
   #reset { width: 100%; margin-top: var(--s6); color: var(--warn); border: 2px solid #ffb4a866; background: transparent; font-size: var(--t-md); }
 </style>
 </head>
@@ -87,6 +96,10 @@
     <div id="resources" class="grid"></div>
     <p class="total" id="total-wrap" aria-live="polite">Total resource cards: <b id="total">0</b></p>
   </section>
+  <section aria-labelledby="h-mkt">
+    <h2 id="h-mkt">Market</h2>
+    <div id="market" class="mkt"></div>
+  </section>
   <section aria-labelledby="h-dev">
     <h2 id="h-dev">Development Cards</h2>
     <div id="devcards" class="grid"></div>
@@ -98,6 +111,7 @@
   <div class="shelf-body" id="players"></div>
   <div class="shelf-foot"><button id="add-player">+ Add player</button></div>
 </dialog>
+<div id="toast" role="status" aria-live="polite"></div>
 <footer id="dice">
   <div class="die" id="d1" aria-label="die one">–</div>
   <div class="die" id="d2" aria-label="die two">–</div>
@@ -105,12 +119,13 @@
   <button id="roll">Roll</button>
 </footer>
 <script>
-  const RESOURCES = ['Brick', 'Lumber', 'Wool', 'Grain', 'Ore'];
+  const RESOURCES = ['Brick', 'Lumber', 'Sheep', 'Hay', 'Ore'];
   const DEV = ['Knight', 'Victory Point', 'Road Building', 'Year of Plenty', 'Monopoly'];
-  const ICON = { Brick: '🧱', Lumber: '🌲', Wool: '🐑', Grain: '🌾', Ore: '⛰️', Knight: '⚔️', 'Victory Point': '🏆', 'Road Building': '🛣️', 'Year of Plenty': '🎁', Monopoly: '🎩' };
+  const ICON = { Brick: '🧱', Lumber: '🌲', Sheep: '🐑', Hay: '🌾', Ore: '⛰️', Knight: '⚔️', 'Victory Point': '🏆', 'Road Building': '🛣️', 'Year of Plenty': '🎁', Monopoly: '🎩' };
   const KEY = 'catanHand';
   let hand = {};
   try { hand = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { hand = {}; }
+  [['Wool','Sheep'],['Grain','Hay']].forEach(([o, n]) => { if (o in hand) { hand[n] = hand[o]; delete hand[o]; } }); // migrate old names
 
   function card(name, cls) {
     const el = document.createElement('div');
@@ -131,6 +146,7 @@
       if (el.textContent != v) { el.textContent = v; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
       c.querySelector('[data-d="-1"]').setAttribute('aria-disabled', v === 0);
     });
+    document.querySelectorAll('[data-buy]').forEach(b => b.setAttribute('aria-disabled', !Object.entries(MARKET[b.dataset.buy]).every(([r, q]) => (hand[r] || 0) >= q)));
     const total = RESOURCES.reduce((s, n) => s + (hand[n] || 0), 0);
     document.getElementById('total').textContent = total;
     document.getElementById('total-wrap').classList.toggle('over', total > 7); // robber discard threshold
@@ -148,6 +164,31 @@
     chip.onanimationend = () => chip.remove();
     b.closest('.card').append(chip);
     render();
+  });
+
+  const MARKET = { Road: { Brick: 1, Lumber: 1 }, Settlement: { Brick: 1, Lumber: 1, Sheep: 1, Hay: 1 }, City: { Hay: 2, Ore: 3 }, 'Dev Card': { Sheep: 1, Hay: 1, Ore: 1 } };
+  const MICON = { Road: '🛣️', Settlement: '🏠', City: '🏰', 'Dev Card': '🎴' };
+  Object.entries(MARKET).forEach(([n, cost]) => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.innerHTML = `<span class="name">${MICON[n]} ${n}</span><span class="cost">${Object.entries(cost).map(([r, q]) => ICON[r].repeat(q)).join(' ')}</span><button data-buy="${n}" aria-label="Buy ${n}">Buy</button>`;
+    document.getElementById('market').append(el);
+  });
+  let toastT;
+  function toast(msg, err) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'show' + (err ? ' err' : '');
+    clearTimeout(toastT); toastT = setTimeout(() => t.className = '', 2200);
+  }
+  document.getElementById('market').addEventListener('click', e => {
+    const b = e.target.closest('button[data-buy]');
+    if (!b) return;
+    const cost = MARKET[b.dataset.buy];
+    const missing = Object.entries(cost).filter(([r, q]) => (hand[r] || 0) < q).map(([r, q]) => `${q - (hand[r] || 0)} ${ICON[r]} ${r}`);
+    if (missing.length) return toast(`Can't buy ${b.dataset.buy}: need ${missing.join(', ')}`, true);
+    Object.entries(cost).forEach(([r, q]) => hand[r] -= q);
+    render();
+    toast(`Bought ${b.dataset.buy}!` + (b.dataset.buy === 'Dev Card' ? ' Tap the card you drew.' : ''));
   });
 
   document.getElementById('roll').onclick = () => {
